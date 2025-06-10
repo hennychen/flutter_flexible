@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:dio/io.dart';
@@ -64,31 +63,54 @@ Dio _initDio() {
 ///// 取消请求
 ///token.cancel("cancelled");
 ///```
+typedef FromJson<T> = T Function(dynamic json);
+
 Future<T> safeRequest<T>(
   String url, {
   Object? data,
   Options? options,
   Map<String, dynamic>? queryParameters,
   CancelToken? cancelToken,
-  int retryCount = 1,  // 新增重试次数参数
+  int retryCount = 1,
+  Duration retryDelay = const Duration(seconds: 1),
+  FromJson<T>? fromJson, // 新增
 }) async {
   int attempt = 0;
   while (true) {
     try {
-      return await Request.dioClient.request(
+      final response = await Request.dioClient.request(
         url,
         data: data,
         queryParameters: queryParameters,
         options: options,
         cancelToken: cancelToken,
-      )
-        .then((data) => jsonDecode(data.data as String) as T);
+      );
+      // 支持自定义反序列化
+      if (fromJson != null) {
+        return fromJson(response.data);
+      }
+      // 默认直接返回
+      return response.data as T;
+    } on DioException catch (e) {
+      // 只对网络错误重试
+      if (_shouldRetry(e) && attempt < retryCount) {
+        attempt++;
+        await Future.delayed(retryDelay * attempt); // 指数退避
+        continue;
+      }
+      rethrow;
     } catch (e) {
-      if (attempt >= retryCount) rethrow;
-      attempt++;
-      await Future.delayed(const Duration(seconds: 1));
+      rethrow;
     }
   }
+}
+
+// 判断是否需要重试
+bool _shouldRetry(DioException e) {
+  return e.type == DioExceptionType.connectionTimeout ||
+      e.type == DioExceptionType.receiveTimeout ||
+      e.type == DioExceptionType.sendTimeout ||
+      e.type == DioExceptionType.connectionError;
 }
 
 class Request {
@@ -99,11 +121,19 @@ class Request {
     String url, {
     Options? options,
     Map<String, dynamic>? queryParameters,
+    int retryCount = 1,
+    Duration retryDelay = const Duration(seconds: 1),
+    FromJson<T>? fromJson,
+    CancelToken? cancelToken,
   }) async {
     return safeRequest<T>(
       url,
       options: options,
       queryParameters: queryParameters,
+      retryCount: retryCount,
+      retryDelay: retryDelay,
+      fromJson: fromJson,
+      cancelToken: cancelToken,
     );
   }
 
@@ -113,12 +143,20 @@ class Request {
     Options? options,
     Object? data,
     Map<String, dynamic>? queryParameters,
+    int retryCount = 1,
+    Duration retryDelay = const Duration(seconds: 1),
+    FromJson<T>? fromJson,
+    CancelToken? cancelToken,
   }) async {
     return safeRequest<T>(
       url,
       options: options?.copyWith(method: 'POST') ?? Options(method: 'POST'),
       data: data,
       queryParameters: queryParameters,
+      retryCount: retryCount,
+      retryDelay: retryDelay,
+      fromJson: fromJson,
+      cancelToken: cancelToken,
     );
   }
 
@@ -128,12 +166,66 @@ class Request {
     Options? options,
     Object? data,
     Map<String, dynamic>? queryParameters,
+    int retryCount = 1,
+    Duration retryDelay = const Duration(seconds: 1),
+    FromJson<T>? fromJson,
+    CancelToken? cancelToken,
   }) async {
     return safeRequest<T>(
       url,
       options: options?.copyWith(method: 'PUT') ?? Options(method: 'PUT'),
       data: data,
       queryParameters: queryParameters,
+      retryCount: retryCount,
+      retryDelay: retryDelay,
+      fromJson: fromJson,
+      cancelToken: cancelToken,
+    );
+  }
+
+  /// delete请求
+  static Future<T> delete<T>(
+    String url, {
+    Options? options,
+    Object? data,
+    Map<String, dynamic>? queryParameters,
+    int retryCount = 1,
+    Duration retryDelay = const Duration(seconds: 1),
+    FromJson<T>? fromJson,
+    CancelToken? cancelToken,
+  }) async {
+    return safeRequest<T>(
+      url,
+      options: options?.copyWith(method: 'DELETE') ?? Options(method: 'DELETE'),
+      data: data,
+      queryParameters: queryParameters,
+      retryCount: retryCount,
+      retryDelay: retryDelay,
+      fromJson: fromJson,
+      cancelToken: cancelToken,
+    );
+  }
+
+  /// options请求
+  static Future<T> options<T>(
+    String url, {
+    Options? options,
+    Object? data,
+    Map<String, dynamic>? queryParameters,
+    int retryCount = 1,
+    Duration retryDelay = const Duration(seconds: 1),
+    FromJson<T>? fromJson,
+    CancelToken? cancelToken,
+  }) async {
+    return safeRequest<T>(
+      url,
+      options: options?.copyWith(method: 'OPTIONS') ?? Options(method: 'OPTIONS'),
+      data: data,
+      queryParameters: queryParameters,
+      retryCount: retryCount,
+      retryDelay: retryDelay,
+      fromJson: fromJson,
+      cancelToken: cancelToken,
     );
   }
 }

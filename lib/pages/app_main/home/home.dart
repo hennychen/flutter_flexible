@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_flexible/services/common_service.dart';
 import 'package:provider/provider.dart';
@@ -107,9 +109,19 @@ class _HomeState extends State<Home> with AutomaticKeepAliveClientMixin {
 
   getFetchFn() async {
     _counter.setLoading(true);
-    var res = await getDemo() as Map<String, dynamic>;
+    var data = await getDemo();
+    print('Type of object: ${data.runtimeType}');
+    final Map<String, dynamic> res = data is String
+        ? jsonDecode(data as String)
+        : data;
+    // 模拟请求结果
+    if (res is Map<String, dynamic> && res.isNotEmpty) {
+      _counter.setFetchResult(res['data']['name'] ?? '请求成功');
+    } else {
+      _counter.setFetchResult('请求结果异常: $res');
+    }
     _counter.setLoading(false);
-    _counter.setFetchResult(res['data']['name']);
+    
   }
 
   Widget _button(String text, {VoidCallback? onPressed, SizedBox? icon}) {

@@ -36,4 +36,6 @@ class AppConfig {
 
   /// 反向代理的IP:端口
   static const proxyAddress = '192.168.2.201:9003';
+
+  static var jwtToken;
 }
