@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_flexible/services/common_service.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../components/update_app/check_app_version.dart';
@@ -57,10 +58,12 @@ class _HomeState extends State<Home> with AutomaticKeepAliveClientMixin {
               },
             ),
             Text('about'),
-            _button('about',onPressed: (){
-              Navigator.pushNamed(context,
+            _button('about', onPressed: () {
+              Navigator.pushNamed(
+                context,
                 RouteName.about,
-                arguments: {'data': '别名路由传参666'},);
+                arguments: {'data': '别名路由传参666'},
+              );
             }),
             Text('状态管理值：${context.watch<CounterStore>().value}'),
             _button(
@@ -81,13 +84,35 @@ class _HomeState extends State<Home> with AutomaticKeepAliveClientMixin {
                 checkAppVersion(forceUpdate: true);
               },
             ),
+            _button(
+              _counter.fetchResult.isNotEmpty
+                  ? _counter.fetchResult
+                  : '请求demo接口',
+              icon: _counter.isLoading
+                  ? const SizedBox(
+                      width: 12.0,
+                      height: 12.0,
+                      child: CircularProgressIndicator(),
+                    )
+                  : const SizedBox.shrink(),
+              onPressed: () {
+                getFetchFn();
+              },
+            ),
           ],
         );
       }),
     );
   }
 
-  Widget _button(String text, {VoidCallback? onPressed}) {
+  getFetchFn() async {
+    _counter.setLoading(true);
+    var res = await getDemo() as Map<String, dynamic>;
+    _counter.setLoading(false);
+    _counter.setFetchResult(res['data']['name']);
+  }
+
+  Widget _button(String text, {VoidCallback? onPressed, SizedBox? icon}) {
     return Container(
       margin: const EdgeInsets.only(top: 10),
       child: ElevatedButton(

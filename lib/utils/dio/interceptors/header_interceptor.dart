@@ -5,10 +5,15 @@ import 'package:flutter_flexible/config/app_config.dart';
  * header拦截器
  */
 class HeaderInterceptors extends InterceptorsWrapper {
-  // 请求拦截
   @override
   onRequest(RequestOptions options, handler) async {
     options.baseUrl = AppConfig.host;
+    options.headers.addAll({
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'X-Requested-With': 'XMLHttpRequest',
+      'Cache-Control': 'no-cache',
+    });
     return handler.next(options);
   }
 
