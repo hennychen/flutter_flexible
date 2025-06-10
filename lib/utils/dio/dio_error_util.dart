@@ -27,9 +27,11 @@ class DioErrorUtil {
           break;
         case DioExceptionType.badCertificate:
           // TODO: Handle this case.
+          errorDescription = "Send timeout in connection with API server：Caused by an incorrect certificate as configured by [ValidateCertificate].";
           break;
         case DioExceptionType.connectionError:
           // TODO: Handle this case.
+           errorDescription = "Send timeout in connection with API server： Caused for example by a `xhr.onError` or SocketExceptions..";
           break;
       }
     } else {

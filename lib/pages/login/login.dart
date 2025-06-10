@@ -61,6 +61,7 @@ class _LoginState extends State<Login> {
 
   // 登入按钮
   login() async {
+    // 点击空白处关闭键盘
     if (!inputIsPhone()) return;
     FocusScope.of(context).requestFocus(blankNode);
     if (!isSelected) return Tips.info('请确认已阅读用户协议和隐私协议');
